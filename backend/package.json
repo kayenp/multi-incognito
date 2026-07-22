@@ -1,0 +1,20 @@
+{
+  "name": "multiple-incognito",
+  "version": "1.0.0",
+  "description": "A backend for launching multiple incognito browser contexts.",
+  "license": "MIT",
+  "author": "Ken Poon",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch --env-file=.env index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.1.1"
+  }
+}
