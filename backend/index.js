@@ -54,6 +54,19 @@ async function startBrowser() {
 		const page = await browser.newPage();
 		await page.goto("https://secretlair.wizards.com/us/shopall");
 		await page.waitForLoadState("domcontentloaded");
+
+		const addToCartBtn = page.locator("button[class*='buy-link']").filter({hasText: "Add to cart"}).first() //.highlight({style: "outline: 2px solid red"});
+		addToCartBtn.click();
+		
+		const miniCartBtn = page.locator("button[class*='minicart-button']");
+		miniCartBtn.click();
+		
+		const proceedCartBtn = page.locator("button[class*='btn-primary']").filter({hasText: "Proceed to Cart"});
+		proceedCartBtn.click();
+		
+		const guestCheckoutBtn = page.locator("button[class*='btn_reverse']").filter({hasText: "Continue as guest"});
+		guestCheckoutBtn.click();
+		
 	} catch (err) {
 		if (err instanceof Error) {
 			console.error(err);
@@ -63,6 +76,9 @@ async function startBrowser() {
 	};
 };
 
-// for (let i = 0; i < 20; i++) {
-// 	startBrowser();
-// }
+function openBrowsers(instances) {
+	for (let i = 0; i < instances; i++) {
+		setTimeout(startBrowser, (i*5000));
+	};
+};
+
