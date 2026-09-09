@@ -34,7 +34,6 @@ app.listen(3000, (err => {
 server.listen(PORT, () => console.log(`NodeJS running on port ${PORT}`));
 
 // Playwright
-
 async function startBrowser() {
 	const { seed, os, timezone, lang } = genFingerprints();
 
@@ -78,7 +77,36 @@ async function startBrowser() {
 
 function openBrowsers(instances) {
 	for (let i = 0; i < instances; i++) {
-		setTimeout(startBrowser, (i*5000));
+		setTimeout(startBrowser, (i*10000));
 	};
 };
 
+openBrowsers(35)
+
+/*
+Request URL
+	https://assets.queue-it.net/static/QueueFront/css/sound/welcomeAudio_92a6592f5d4e6b14efdcc82656ba4273.mp3 
+status code 
+	206 Partial Content
+content-type
+	audio/mpeg
+Request URL
+	https://assets.queue-it.net/scalefast/userdata/assets/wizardsofthecoast-secret-lair/shared/img/favicon.ico
+status code
+	200
+content-type 
+	image/x-icon
+
+Request URL
+	https://cdn-prod.scalefast.com/public/assets/client/generic/angips/assets/images/payment-logos/visa.png
+status code
+	200
+content-type
+	image/png
+...mastercard.png
+...maestro.png
+...amex.png
+...discover.png
+...paywithgoogle.png
+...paypal.png
+*/
