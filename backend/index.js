@@ -51,20 +51,25 @@ async function startBrowser() {
 		});
 
 		const page = await browser.newPage();
+		
 		await page.goto("https://secretlair.wizards.com/us/shopall");
 		await page.waitForLoadState("domcontentloaded");
 
 		const addToCartBtn = page.locator("button[class*='buy-link']").filter({hasText: "Add to cart"}).first() //.highlight({style: "outline: 2px solid red"});
-		addToCartBtn.click();
+		
+		await addToCartBtn.click();
 		
 		const miniCartBtn = page.locator("button[class*='minicart-button']");
-		miniCartBtn.click();
+		
+		await miniCartBtn.click();
 		
 		const proceedCartBtn = page.locator("button[class*='btn-primary']").filter({hasText: "Proceed to Cart"});
-		proceedCartBtn.click();
+		
+		await proceedCartBtn.click();
 		
 		const guestCheckoutBtn = page.locator("button[class*='btn_reverse']").filter({hasText: "Continue as guest"});
-		guestCheckoutBtn.click();
+		
+		await guestCheckoutBtn.click();
 		
 	} catch (err) {
 		if (err instanceof Error) {
@@ -81,7 +86,7 @@ function openBrowsers(instances) {
 	};
 };
 
-openBrowsers(35)
+openBrowsers(3)
 
 /*
 Request URL
