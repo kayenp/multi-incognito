@@ -14,6 +14,10 @@ import { chromium } from "@playwright/test";
 // fingerprint imports
 import { genFingerprints } from "./utils/fingerprint.js";
 
+// run manager imports
+import { RunManager } from "./runner/runs.js";
+import { createApi } from "./runner/api.js";
+
 // constants
 const PORT = process.env.PORT || 5000;
 const __dirname = import.meta.dirname;
@@ -24,14 +28,16 @@ const server = https.createServer();
 
 // servers
 app.listen(3000, (err => {
-	if (err) {
-		console.error(err);
-	} else {
-		console.log("Express running on port 3000");
-	};
+	(err) && console.error(err.message);
 }));
 
 server.listen(PORT, () => console.log(`NodeJS running on port ${PORT}`));
+
+// Run manager API (used by the dashboard in ../frontend). FLOW in .env selects the flow module.
+const flow = await import(url.pathToFileURL(path.resolve(__dirname, process.env.FLOW || "./flows/example.js")).href);
+const runManager = new RunManager(flow);
+app.use("/api", createApi(runManager));
+console.log(`Flow loaded: ${flow.name ?? "unnamed"} (${flow.steps?.length ?? 0} steps)`);
 
 // Playwright
 async function startBrowser() {
@@ -41,7 +47,8 @@ async function startBrowser() {
 	try {
 		const browser = await chromium.launch({
 			headless: false,
-			executablePath: "C:/Users/Ken/AppData/Local/Chromium/Application/chrome.exe",
+			executablePath: "~/applications/ungoogled-chromium-148.0.7778.215-1-x86_64.AppImage",
+			// executablePath: "C:/Users/Ken/AppData/Local/Chromium/Application/chrome.exe",
 			args: [
 				`--fingerprint=${seed}`, 
 				`--fingerprint-platform=${os}`,
@@ -86,7 +93,8 @@ function openBrowsers(instances) {
 	};
 };
 
-openBrowsers(3)
+// Batches are now launched from the dashboard (POST /api/launch) instead of on startup.
+// openBrowsers(30)
 
 /*
 Request URL

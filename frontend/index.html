@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Cascade Launcher</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet" />
+		<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0&icon_names=add,analytics,bookmark_add,casino,check_circle,close,content_copy,dangerous,data_object,error,fact_check,flag,hourglass_bottom,hub,laptop_mac,layers,memory,play_arrow,play_circle,progress_activity,remove,replay,restart_alt,rocket_launch,schedule,shuffle,stop,stop_circle,sync,table_rows,terminal,translate,tune,unfold_more,verified,wifi_off&display=block" rel="stylesheet" />
+		<script type="module" src="/src/main.js"></script>
+	</head>
+	<body class="bg-surface font-sans text-body-md text-on-surface antialiased">
+		<!-- Sidebar -->
+		<aside class="fixed left-0 top-0 bottom-0 w-[260px] z-50 bg-surface-container-lowest border-r border-line-strong/80 flex flex-col gap-space-lg p-space-md">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-space-sm">
+					<div class="w-8 h-8 rounded bg-ink flex items-center justify-center text-primary-bright shadow-sm">
+						<span class="icon text-[18px]">layers</span>
+					</div>
+					<div class="flex flex-col">
+						<span class="text-headline-sm text-on-surface leading-tight tracking-tight">Cascade</span>
+						<span class="font-mono text-code-xs text-outline">multi-incognito</span>
+					</div>
+				</div>
+				<span class="font-mono text-code-xs font-semibold uppercase tracking-wider px-space-xs py-0.5 rounded-sm bg-surface-container border border-line-strong text-on-surface-variant">Chromium</span>
+			</div>
+
+			<div class="flex flex-col gap-space-sm">
+				<span class="section-label text-outline px-space-xs">Instance Control</span>
+				<nav id="nav" class="flex flex-col gap-space-xs">
+					<a href="#launcher-profiles" data-view="launcher-profiles"><span class="icon text-[18px]">tune</span><span>Launcher Profiles</span></a>
+					<a href="#runtime-flags" data-view="runtime-flags"><span class="icon text-[18px]">flag</span><span>Runtime Flags</span></a>
+					<a href="#run-monitor" data-view="run-monitor"><span class="icon text-[18px]">table_rows</span><span>Run Monitor</span><span id="nav-run-badge" hidden></span></a>
+					<a href="#network-proxy" data-view="network-proxy"><span class="icon text-[18px]">hub</span><span>Network &amp; Proxy</span></a>
+					<a href="#telemetry-logs" data-view="telemetry-logs"><span class="icon text-[18px]">analytics</span><span>Telemetry Logs</span></a>
+				</nav>
+			</div>
+
+			<div class="flex flex-col gap-space-xs min-h-0 flex-1">
+				<span class="section-label text-outline px-space-xs">Saved Presets</span>
+				<ul id="preset-list" class="flex flex-col gap-0.5 overflow-y-auto no-scrollbar"></ul>
+			</div>
+
+			<div class="flex flex-col gap-space-md p-space-md rounded-md bg-surface-container-low border border-line shadow-xs">
+				<div class="flex items-center justify-between">
+					<span class="section-label text-outline">System Telemetry</span>
+					<span class="w-2 h-2 rounded-full bg-primary-container" aria-hidden="true"></span>
+				</div>
+				<div class="flex flex-col gap-space-xs">
+					<div class="flex items-baseline justify-between">
+						<span class="text-label-md text-ink">Batch RAM (est.)</span>
+						<span class="font-mono text-code-sm font-semibold text-primary" id="sidebar-ram-text">0.4 GB</span>
+					</div>
+					<div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+						<div id="sidebar-ram-bar" class="h-full bg-primary-container transition-all duration-300" style="width: 0%"></div>
+					</div>
+				</div>
+				<div class="flex items-center justify-between">
+					<span class="flex items-center gap-space-xs text-label-md text-ink"><span id="sidebar-dot" class="w-2 h-2 rounded-full bg-outline-variant"></span>Backend</span>
+					<span class="font-mono text-code-sm text-outline" id="sidebar-backend">—</span>
+				</div>
+			</div>
+		</aside>
+
+		<!-- Header: global launch controls -->
+		<header class="fixed top-0 left-[260px] right-0 z-40 bg-surface-container-lowest border-b border-line-strong/80 shadow-xs">
+			<div class="h-16 w-full px-space-lg flex items-center justify-between gap-space-md">
+				<div class="flex items-center gap-space-lg">
+					<label class="flex items-center gap-space-sm cursor-pointer" title="Pick a random OS, locale and time zone for each instance">
+						<span class="text-label-md !font-medium text-on-surface-variant">Randomize profile</span>
+						<input id="auto-profile-toggle" type="checkbox" class="peer sr-only" />
+						<span class="switch !w-9 !h-5 after:!w-4 after:!h-4"></span>
+					</label>
+					<div class="flex items-center gap-space-xs h-10 pl-space-sm pr-1.5 rounded bg-surface-container border border-line">
+						<label for="instance-count-input" class="section-label text-outline mr-space-xs">Instances</label>
+						<button id="btn-inst-dec" type="button" aria-label="Fewer instances" class="w-7 h-7 rounded-sm bg-surface-container-lowest border border-line-strong hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors active:translate-y-px cursor-pointer"><span class="icon text-[16px]">remove</span></button>
+						<input id="instance-count-input" type="number" min="1" max="50" class="w-9 text-center bg-transparent font-mono text-code-md font-semibold text-on-surface focus:outline-none" />
+						<button id="btn-inst-inc" type="button" aria-label="More instances" class="w-7 h-7 rounded-sm bg-surface-container-lowest border border-line-strong hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-colors active:translate-y-px cursor-pointer"><span class="icon text-[16px]">add</span></button>
+					</div>
+				</div>
+				<div class="flex items-center gap-space-md">
+					<div id="status-pill" class="flex items-center gap-space-xs h-7 px-space-sm rounded-full bg-surface-container border border-line font-mono text-code-sm font-semibold text-outline">
+						<span id="status-dot" class="w-2 h-2 rounded-full bg-outline-variant"></span>
+						<span id="status-text">Checking backend…</span>
+					</div>
+					<button id="btn-launch" type="button" class="h-10 px-space-md rounded bg-primary hover:bg-primary-hover text-white text-label-lg flex items-center gap-space-xs shadow-sm transition-colors duration-150 ease-out active:translate-y-px cursor-pointer disabled:opacity-60 disabled:cursor-wait">
+						<span class="icon text-[20px]">play_arrow</span>
+						<span id="launch-label">Launch Chromium Instance</span>
+						<kbd class="ml-space-xs px-1 py-px rounded-sm bg-white/15 text-white/85">↵</kbd>
+					</button>
+				</div>
+			</div>
+		</header>
+
+		<div class="pl-[260px]">
+			<main class="w-full pt-16 min-h-screen bg-surface">
+				<!-- ========== VIEW: Launcher Profiles ========== -->
+				<section data-view-panel="launcher-profiles" class="max-w-3xl mx-auto w-full py-8 px-6 flex flex-col gap-space-lg">
+					<!-- Title block -->
+					<div class="flex flex-col gap-space-sm">
+						<div class="flex flex-wrap items-center justify-between gap-space-sm">
+							<div class="flex items-center gap-space-sm">
+								<span class="w-2.5 h-2.5 rounded-full bg-primary-container" aria-hidden="true"></span>
+								<h1 class="text-headline-lg !font-bold text-on-surface">Runtime Orchestrator</h1>
+							</div>
+							<span class="flex items-center gap-space-xs h-7 px-space-sm rounded-sm bg-surface-container-lowest border border-line-strong shadow-xs font-mono text-code-sm font-semibold text-ink">
+								<span class="icon text-[14px] text-primary">verified</span>playwright.chromium
+							</span>
+						</div>
+						<p class="text-body-md text-on-surface-variant">Configure the fingerprint each incognito context launches with, then fire a staggered batch.</p>
+						<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+							<div class="flex flex-wrap items-center gap-space-xs">
+								<span class="chip !font-sans !text-ui text-on-surface-variant">Preset: <span id="crumb-preset" class="font-mono text-code-sm text-on-surface">default</span></span>
+								<span class="chip !font-sans !text-ui text-on-surface-variant">Policy: <span id="policy-label" class="text-tertiary">Per-instance Random</span></span>
+							</div>
+							<div class="flex items-center gap-space-xs">
+								<button id="btn-randomize-all" type="button" class="chip-btn"><span class="icon text-[16px] text-primary">casino</span>Randomize all</button>
+								<button id="btn-reset" type="button" class="chip-btn"><span class="icon text-[16px] text-outline">restart_alt</span>Reset defaults</button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Fingerprint configuration -->
+					<div class="card p-space-lg flex flex-col gap-space-lg">
+						<!-- OS -->
+						<div class="panel">
+							<div class="flex items-start justify-between gap-space-md">
+								<div class="flex flex-col gap-0.5">
+									<div class="flex items-center gap-space-xs">
+										<span class="icon text-[18px] text-ink">laptop_mac</span>
+										<label for="os-select" class="text-label-lg text-on-surface">Target Operating System</label>
+										<span class="font-mono text-code-xs text-outline">--fingerprint-platform</span>
+									</div>
+									<span class="text-body-sm text-on-surface-variant">Emulates the user agent, navigator.platform and system font profile</span>
+								</div>
+								<button id="btn-rand-os" type="button" class="chip-btn shrink-0"><span class="icon text-[16px] text-primary">casino</span>Random</button>
+							</div>
+							<div class="relative">
+								<select id="os-select" class="field"></select>
+								<span class="icon text-[18px] text-outline absolute right-3 top-2.5 pointer-events-none">unfold_more</span>
+							</div>
+							<div class="meta-row overflow-hidden">
+								<span class="font-mono text-code-xs shrink-0">navigator.platform</span>
+								<span class="font-mono text-code-sm text-secondary truncate" id="os-preview"></span>
+							</div>
+						</div>
+
+						<!-- Time zone -->
+						<div class="panel">
+							<div class="flex items-start justify-between gap-space-md">
+								<div class="flex flex-col gap-0.5">
+									<div class="flex items-center gap-space-xs">
+										<span class="icon text-[18px] text-ink">schedule</span>
+										<label for="tz-select" class="text-label-lg text-on-surface">Time Zone Emulation</label>
+										<span class="font-mono text-code-xs text-outline">--timezone</span>
+									</div>
+									<span class="text-body-sm text-on-surface-variant">Overrides Intl.DateTimeFormat and the system clock offset</span>
+								</div>
+								<button id="btn-rand-tz" type="button" class="chip-btn shrink-0"><span class="icon text-[16px] text-primary">casino</span>Random</button>
+							</div>
+							<div class="relative">
+								<select id="tz-select" class="field"></select>
+								<span class="icon text-[18px] text-outline absolute right-3 top-2.5 pointer-events-none">unfold_more</span>
+							</div>
+							<div class="meta-row">
+								<span>Active emulation</span>
+								<span class="font-mono text-code-sm text-tertiary flex items-center gap-space-xs" id="tz-badge"></span>
+							</div>
+						</div>
+
+						<!-- Language -->
+						<div class="panel">
+							<div class="flex items-start justify-between gap-space-md">
+								<div class="flex flex-col gap-0.5">
+									<div class="flex items-center gap-space-xs">
+										<span class="icon text-[18px] text-ink">translate</span>
+										<label for="lang-select" class="text-label-lg text-on-surface">Locale &amp; Accept-Language</label>
+										<span class="font-mono text-code-xs text-outline">--lang</span>
+									</div>
+									<span class="text-body-sm text-on-surface-variant">ISO 639-1 language with an optional ISO 3166-1 region</span>
+								</div>
+								<button id="btn-rand-lang" type="button" class="chip-btn shrink-0"><span class="icon text-[16px] text-primary">casino</span>Random</button>
+							</div>
+							<div class="relative">
+								<select id="lang-select" class="field"></select>
+								<span class="icon text-[18px] text-outline absolute right-3 top-2.5 pointer-events-none">unfold_more</span>
+							</div>
+							<div class="meta-row">
+								<span>Accept-Language</span>
+								<span class="chip !h-5 !px-1.5" id="lang-chip"></span>
+							</div>
+						</div>
+
+						<!-- Seed -->
+						<div class="panel">
+							<div class="flex items-start justify-between gap-space-md">
+								<div class="flex flex-col gap-0.5">
+									<div class="flex items-center gap-space-xs">
+										<span class="icon text-[18px] text-ink">casino</span>
+										<label for="seed-input" class="text-label-lg text-on-surface">Fingerprint Seed</label>
+										<span class="font-mono text-code-xs text-outline">--fingerprint</span>
+									</div>
+									<span class="text-body-sm text-on-surface-variant">Integer from 0 to 2,147,483,647 (2³¹ − 1) for a reproducible fingerprint</span>
+								</div>
+								<label class="flex items-center gap-space-xs shrink-0 cursor-pointer" title="Draw a fresh seed for every instance in the batch">
+									<span class="text-label-sm text-on-surface-variant">Auto-seed each instance</span>
+									<input id="auto-seed-toggle" type="checkbox" checked class="peer sr-only" />
+									<span class="switch"></span>
+								</label>
+							</div>
+							<div class="flex items-center gap-space-xs">
+								<div class="relative flex-1 flex items-center">
+									<span class="absolute left-space-md font-mono text-code-sm text-outline-variant select-none">#</span>
+									<input id="seed-input" type="text" inputmode="numeric" spellcheck="false" class="w-full h-10 pl-8 pr-space-md bg-surface-container-lowest border border-line-strong rounded font-mono text-code-md text-on-surface tracking-wider transition-colors hover:border-outline-variant focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container/20" />
+								</div>
+								<button id="btn-rand-seed" type="button" title="New seed" aria-label="Generate a new seed" class="icon-btn"><span class="icon text-[18px]">shuffle</span></button>
+								<button id="btn-copy-seed" type="button" title="Copy seed to clipboard" aria-label="Copy seed to clipboard" class="icon-btn"><span class="icon text-[18px]">content_copy</span></button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Batch execution -->
+					<div class="card p-space-lg flex flex-col gap-space-lg">
+						<div class="flex flex-wrap items-center justify-between gap-space-sm">
+							<div class="flex items-center gap-space-xs">
+								<span class="icon text-[18px] text-ink">hub</span>
+								<h2 class="text-headline-sm !font-bold text-on-surface">Batch Execution</h2>
+								<span id="inst-badge" class="chip ml-space-xs"></span>
+							</div>
+							<span class="chip !font-sans !text-ui">
+								<span class="icon text-[14px] text-primary">sync</span><span id="exec-mode-badge" class="text-on-surface"></span>
+							</span>
+						</div>
+
+						<!-- Stagger -->
+						<div class="flex flex-wrap items-center justify-between gap-space-sm">
+							<div class="flex items-center gap-space-sm">
+								<label for="launch-delay-input" class="text-label-lg text-on-surface">Launch stagger</label>
+								<div class="flex items-center h-9 px-space-sm rounded bg-surface-container-lowest border border-line-strong focus-within:border-primary-container focus-within:ring-2 focus-within:ring-primary-container/20">
+									<input id="launch-delay-input" type="number" min="0" max="60000" step="250" class="w-16 text-right bg-transparent font-mono text-code-md text-on-surface pr-1 focus:outline-none" />
+									<span class="font-mono text-code-xs text-outline select-none">ms</span>
+								</div>
+							</div>
+							<div id="delay-presets" class="flex items-center gap-space-xs"></div>
+						</div>
+
+						<!-- Memory estimate -->
+						<div class="flex flex-col gap-space-sm p-space-md rounded bg-surface-container-low border border-line">
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-space-xs">
+									<span class="icon text-[16px] text-primary">memory</span>
+									<span class="text-label-lg text-on-surface">Memory estimate</span>
+									<span id="mem-state" class="section-label px-1 py-0.5 rounded-sm bg-surface-container"></span>
+								</div>
+								<span class="font-mono text-code-sm text-outline">~380 MB / instance</span>
+							</div>
+							<div class="flex flex-col gap-space-xs">
+								<div class="flex items-center justify-between text-ui">
+									<span class="text-on-surface-variant">Batch footprint</span>
+									<span class="font-mono text-code-md font-semibold text-on-surface" id="mem-usage-text"></span>
+								</div>
+								<div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+									<div id="mem-gauge-bar" class="h-full bg-primary-container transition-all duration-300"></div>
+								</div>
+							</div>
+							<div class="grid grid-cols-3 gap-space-sm pt-space-xs">
+								<div class="flex flex-col gap-0.5"><span class="section-label text-outline">Instances</span><span class="font-mono text-code-md text-on-surface" id="mem-instances"></span></div>
+								<div class="flex flex-col gap-0.5"><span class="section-label text-outline">Ramp-up</span><span class="font-mono text-code-md text-on-surface" id="mem-ramp"></span></div>
+								<div class="flex flex-col gap-0.5"><span class="section-label text-outline">Host budget</span><span class="font-mono text-code-md text-on-surface" id="mem-budget"></span></div>
+							</div>
+						</div>
+
+						<!-- CLI preview -->
+						<div class="flex flex-col gap-space-xs">
+							<div class="flex items-center justify-between">
+								<span class="flex items-center gap-space-xs section-label text-on-surface-variant"><span class="icon text-[14px] text-ink">terminal</span>Synthesized arguments</span>
+								<div class="flex items-center gap-space-sm">
+									<span id="copy-notif" class="text-ui text-tertiary opacity-0 transition-opacity" aria-live="polite">Copied flagset</span>
+									<button id="btn-copy-cli" type="button" class="chip-btn !h-6"><span class="icon text-[14px]">content_copy</span>Copy</button>
+								</div>
+							</div>
+							<div id="cli" class="bg-surface-container-low border border-line px-space-md py-space-sm rounded font-mono text-code-sm text-on-surface overflow-x-auto whitespace-nowrap no-scrollbar flex items-center gap-1.5 select-all"></div>
+						</div>
+
+						<!-- Secondary actions -->
+						<div class="flex flex-wrap items-center gap-space-xs border-t border-line -mx-space-lg px-space-lg pt-space-md">
+							<button id="btn-validate" type="button" class="btn-secondary"><span class="icon text-[16px] text-tertiary">fact_check</span>Dry run</button>
+							<button id="btn-save-preset" type="button" class="btn-secondary"><span class="icon text-[16px] text-primary">bookmark_add</span>Save preset</button>
+							<button id="btn-inspect" type="button" class="btn-secondary"><span class="icon text-[16px] text-secondary">data_object</span>Inspect config</button>
+						</div>
+					</div>
+
+					<!-- Footer -->
+					<div class="flex flex-wrap items-center justify-between gap-space-sm px-space-xs text-body-sm text-on-surface-variant">
+						<div class="flex items-center gap-space-xs">
+							<span id="footer-dot" class="w-2 h-2 rounded-full bg-outline-variant"></span>
+							<span>API</span>
+							<span class="font-mono text-code-sm text-outline" id="footer-api">POST /api/launch</span>
+						</div>
+						<div class="flex items-center gap-space-md">
+							<span>Mode <span class="font-mono text-code-sm text-on-surface">headed</span></span>
+							<span>Context <span class="font-mono text-code-sm text-on-surface">incognito</span></span>
+							<span>Launches <span class="font-mono text-code-sm text-on-surface" id="footer-launches">0</span></span>
+						</div>
+					</div>
+				</section>
+
+				<!-- ========== VIEW: Run Monitor ========== -->
+				<section data-view-panel="run-monitor" hidden class="flex flex-col w-full gap-space-md px-space-lg py-space-lg">
+					<div id="monitor-empty" class="card p-space-xl flex flex-col items-center justify-center gap-space-sm text-center min-h-[60vh]">
+						<span class="icon text-[32px] text-outline-variant">table_rows</span>
+						<h1 class="text-headline-md text-on-surface">No run yet</h1>
+						<p class="text-body-md text-on-surface-variant max-w-sm">Launch a batch from the launcher and its instances appear here, one row each, filling in step by step as the flow runs.</p>
+						<a href="#launcher-profiles" class="btn-secondary mt-space-xs"><span class="icon text-[16px]">tune</span>Open launcher</a>
+					</div>
+
+					<div id="monitor-body" hidden class="flex flex-col gap-space-md">
+						<!-- Run header: state, clock, and a batch tape with one segment per instance -->
+						<div class="card px-space-lg pt-space-md pb-space-lg flex flex-col gap-space-md">
+							<div class="flex items-start justify-between gap-space-lg">
+								<div class="flex flex-col gap-1 min-w-0">
+									<div class="flex items-center gap-space-xs">
+										<span class="icon text-ink text-[18px]" aria-hidden="true">table_rows</span>
+										<h1 class="text-headline-sm !font-bold text-on-surface">Run Monitor</h1>
+										<span class="chip !h-5 !px-1.5">RUN <span id="run-id" class="text-on-surface"></span></span>
+									</div>
+									<div class="flex items-baseline gap-space-sm">
+										<span id="run-state" class="text-headline-lg"></span>
+										<span id="run-total" class="text-body-md text-on-surface-variant tabular-nums"></span>
+									</div>
+								</div>
+								<div class="flex items-start gap-space-lg shrink-0">
+									<div class="flex flex-col items-end gap-1">
+										<span id="run-elapsed" class="font-mono text-headline-lg font-semibold text-on-surface tabular-nums"></span>
+										<span id="run-phase" class="text-body-md text-on-surface-variant tabular-nums"></span>
+									</div>
+									<div class="flex items-center gap-space-xs pt-1">
+										<a href="#launcher-profiles" class="btn-secondary"><span class="icon text-[16px]" aria-hidden="true">tune</span>Launcher</a>
+										<button id="btn-stop-run" type="button" class="flex items-center gap-space-xs h-9 px-space-md rounded border border-danger bg-danger/[0.06] hover:bg-danger/12 text-danger text-ui font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"><span class="icon text-[16px]" aria-hidden="true">stop</span><span data-label>Stop Run</span></button>
+										<button id="btn-dismiss-run" type="button" hidden class="btn-secondary" title="Clear this finished run from the monitor"><span class="icon text-[16px]" aria-hidden="true">close</span>Dismiss</button>
+									</div>
+								</div>
+							</div>
+							<div id="run-tape" class="run-tape" role="img"></div>
+							<div id="run-counts" class="flex items-center gap-x-space-xl whitespace-nowrap" aria-live="polite"></div>
+						</div>
+
+						<div id="feed-banner" hidden role="status"><span class="icon text-[16px]">wifi_off</span><span id="feed-banner-text"></span></div>
+
+						<!-- Matrix -->
+						<div id="matrix" role="grid" aria-label="Instances by step" class="card !shadow-none overflow-auto max-h-[calc(100vh-19rem)]">
+							<div id="matrix-head" role="row" class="matrix-grid sticky top-0 z-10 bg-surface-container-low border-b border-line"></div>
+							<div id="matrix-body" role="rowgroup" class="py-1"></div>
+						</div>
+
+						<!-- Legend + keys -->
+						<div class="flex items-center justify-between gap-space-md px-space-xs text-body-sm text-on-surface-variant">
+							<div class="flex items-center gap-space-md flex-wrap">
+								<span class="flex items-center gap-1.5"><span class="w-5 h-3 rounded-sm bg-primary-container/20"></span>done</span>
+								<span class="flex items-center gap-1.5"><span class="w-5 h-3 rounded-sm bg-primary"></span>slow, &gt;2× median</span>
+								<span class="flex items-center gap-1.5"><span class="w-5 h-3 rounded-sm border border-primary-container bg-primary-container/10"></span>current</span>
+								<span class="flex items-center gap-1.5"><span class="w-5 h-3 rounded-sm border border-warning bg-warning/10"></span>stalled &gt;60s</span>
+								<span class="flex items-center gap-1.5"><span class="w-5 h-3 rounded-sm border border-danger bg-danger/12"></span>failed</span>
+							</div>
+							<div class="flex items-center gap-space-sm text-outline shrink-0">
+								<span><kbd class="text-on-surface-variant">↑↓</kbd> select</span>
+								<span><kbd class="text-on-surface-variant">Enter</kbd> details</span>
+								<span><kbd class="text-on-surface-variant">S</kbd> stop</span>
+								<span><kbd class="text-on-surface-variant">R</kbd> retry</span>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- ========== Placeholder views ========== -->
+				<section data-view-panel="placeholder" hidden class="max-w-3xl mx-auto w-full py-8 px-6">
+					<div class="card p-space-xl flex flex-col items-center justify-center gap-space-sm text-center min-h-[60vh]">
+						<span id="placeholder-icon" class="icon text-[32px] text-primary">flag</span>
+						<h1 id="placeholder-title" class="text-headline-md text-on-surface"></h1>
+						<p class="text-body-md text-on-surface-variant max-w-sm">This panel isn't wired to the backend yet. Configure and launch instances from <a href="#launcher-profiles" class="text-primary underline underline-offset-2 hover:text-primary-hover">Launcher Profiles</a>.</p>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<!-- Instance drawer -->
+		<aside id="drawer" aria-label="Instance details" class="fixed right-0 top-16 bottom-0 w-[420px] z-40 bg-surface-container-lowest border-l border-line-strong shadow-[-8px_0_24px_rgba(15,23,42,0.08)] flex flex-col translate-x-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]">
+			<div class="flex items-center justify-between px-space-md h-14 border-b border-line shrink-0">
+				<div class="flex items-center gap-space-sm">
+					<h2 id="drawer-title" class="text-headline-sm text-on-surface"></h2>
+					<span id="drawer-state" class="text-ui"></span>
+				</div>
+				<button id="btn-drawer-close" type="button" aria-label="Close details" class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container cursor-pointer"><span class="icon text-[18px]">close</span></button>
+			</div>
+			<div class="flex-1 overflow-y-auto p-space-md flex flex-col gap-space-lg">
+				<div id="drawer-actions" class="grid grid-cols-2 gap-space-xs">
+					<button id="btn-inst-stop" type="button" class="flex items-center justify-center gap-1 h-9 rounded border border-danger bg-danger/[0.06] hover:bg-danger/12 text-danger text-ui font-semibold transition-colors cursor-pointer"><span class="icon text-[16px]">stop</span><span data-label>Stop instance</span><kbd class="ml-1 text-danger/70">S</kbd></button>
+					<button id="btn-inst-retry" type="button" class="btn-secondary justify-center"><span class="icon text-[16px] text-primary">replay</span>Retry<kbd class="ml-1 text-outline">R</kbd></button>
+				</div>
+
+				<section>
+					<h3 class="section-label text-outline mb-space-xs">Launch config</h3>
+					<dl id="drawer-config" class="grid grid-cols-[88px_1fr] gap-x-space-sm gap-y-1.5 font-mono text-code-sm bg-surface-container-low border border-line rounded p-space-md"></dl>
+				</section>
+
+				<section>
+					<h3 class="section-label text-outline mb-space-xs">Step timeline</h3>
+					<ol id="drawer-steps" class="bg-surface-container-low border border-line rounded px-space-md py-1"></ol>
+				</section>
+
+				<section id="drawer-diagnostics" hidden>
+					<h3 class="section-label text-outline mb-space-xs">Page at <span id="drawer-diag-when"></span></h3>
+					<div class="flex flex-col gap-space-sm bg-surface-container-low border border-line rounded p-space-md">
+						<dl id="drawer-diag-meta" class="grid grid-cols-[88px_1fr] gap-x-space-sm gap-y-1.5 font-mono text-code-sm"></dl>
+						<a id="drawer-diag-shot-link" target="_blank" rel="noopener" title="Open full-size screenshot" class="block rounded-sm border border-line-strong overflow-hidden hover:border-primary-container transition-colors">
+							<img id="drawer-diag-shot" alt="Screenshot of the page when the step stopped" class="block w-full h-auto bg-surface-container" />
+						</a>
+						<p id="drawer-diag-noshot" hidden class="text-body-sm text-outline">No screenshot: the page didn't respond in time.</p>
+					</div>
+				</section>
+
+				<section id="drawer-error" hidden>
+					<div class="flex items-center justify-between mb-space-xs">
+						<h3 id="drawer-error-heading" class="section-label text-danger">Error</h3>
+						<button id="btn-copy-error" type="button" class="chip-btn !h-6"><span class="icon text-[14px]">content_copy</span><span data-label>Copy</span></button>
+					</div>
+					<p id="drawer-error-title" class="text-body-sm text-danger mb-space-xs break-words"></p>
+					<pre id="drawer-error-stack" class="bg-surface-container-low border border-danger/30 rounded p-space-sm font-mono text-code-xs leading-4 text-on-surface-variant whitespace-pre-wrap [overflow-wrap:anywhere] max-h-80 overflow-auto"></pre>
+				</section>
+			</div>
+		</aside>
+
+		<!-- Modal -->
+		<div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" class="fixed inset-0 bg-ink-strong/30 z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-150">
+			<div class="bg-surface-container-lowest border border-line-strong p-space-lg rounded-md shadow-[0_16px_40px_rgba(15,23,42,0.16)] max-w-lg w-full flex flex-col gap-space-md">
+				<div class="flex items-center gap-space-sm">
+					<span id="modal-icon" class="icon text-[28px] text-primary">progress_activity</span>
+					<div class="flex flex-col">
+						<span id="modal-title" class="text-headline-sm text-on-surface"></span>
+						<span id="modal-subtitle" class="text-body-md text-on-surface-variant"></span>
+					</div>
+				</div>
+				<div id="modal-log" class="bg-surface-container-low border border-line p-space-sm rounded font-mono text-code-xs leading-4 flex flex-col gap-1 max-h-72 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere]"></div>
+				<div class="flex justify-end gap-space-sm">
+					<button id="btn-close-modal" type="button">Dismiss</button>
+					<button id="btn-modal-confirm" type="button" hidden class="h-10 px-space-md rounded border border-danger bg-danger/[0.06] hover:bg-danger/12 text-danger text-ui font-semibold transition-colors cursor-pointer"></button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
