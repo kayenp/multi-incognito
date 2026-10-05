@@ -2,6 +2,8 @@
 
 <h3>Technologies used:
     <img src="https://img.shields.io/static/v1?label=|&message=HTML5&color=23555f&style=plastic&logo=html5"/>
+    <img src="https://img.shields.io/static/v1?label=|&message=CSS3&color=285f65&style=plastic&logo=css3"/>
+    <img src="https://img.shields.io/static/v1?label=|&message=JAVASCRIPT&color=3c7f5d&style=plastic&logo=javascript"/>
     <img src="https://img.shields.io/static/v1?label=|&message=TAILWIND&color=285f65&style=plastic&logo=tailwind"/>
     <img src="https://img.shields.io/static/v1?label=|&message=PLAYWRIGHT&color=4a935c&style=plastic&logo=playwright"/>
     <img src="https://img.shields.io/static/v1?label=|&message=NODEJS&color=cdf998&style=plastic&logo=nodedotjs"/>
