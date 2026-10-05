@@ -13,6 +13,27 @@ const STEP_TIMEOUT_MS = Number(process.env.STEP_TIMEOUT_MS) || 15_000;
 const NAV_TIMEOUT_MS = Number(process.env.NAV_TIMEOUT_MS) || 30_000;
 const DIAGNOSTIC_TIMEOUT_MS = 5_000;
 
+// Memory savers (headed mode is required, so these are the main levers). Each can be turned off from .env:
+//   BLOCK_RESOURCES        – comma-separated Playwright resource types to abort ("" blocks nothing)
+//   DISABLE_SITE_ISOLATION – "0" keeps Chromium's one-renderer-per-site iframe isolation
+//   VIEWPORT               – "<w>x<h>" page size ("" keeps Playwright's 1280x720 default)
+const BLOCK_RESOURCES = new Set((process.env.BLOCK_RESOURCES ?? "image,media,font").split(",").map((s) => s.trim()).filter(Boolean));
+const DISABLE_SITE_ISOLATION = process.env.DISABLE_SITE_ISOLATION !== "0";
+const VIEWPORT = (() => {
+	const [width, height] = (process.env.VIEWPORT ?? "1024x700").split("x").map(Number);
+	return width > 0 && height > 0 ? { width, height } : null;
+})();
+// Room for the tab strip and toolbar above the viewport.
+const WINDOW_CHROME_HEIGHT = 90;
+
+function launchArgs({ seed, os, timezone, lang }) {
+	const args = [`--fingerprint=${seed}`, `--fingerprint-platform=${os}`, `--timezone=${timezone}`, `--lang=${lang}`];
+	// Cross-site iframes (cookie banner, payment, analytics) otherwise each get their own renderer process.
+	if (DISABLE_SITE_ISOLATION) args.push("--disable-site-isolation-trials", "--disable-features=IsolateOrigins,site-per-process");
+	if (VIEWPORT) args.push(`--window-size=${VIEWPORT.width},${VIEWPORT.height + WINDOW_CHROME_HEIGHT}`);
+	return args;
+}
+
 export const isTerminal = (instance) => TERMINAL.has(instance.state);
 
 const randomSeed = () => Math.floor(Math.random() * (SEED_MAX + 1));
@@ -147,7 +168,7 @@ export class RunManager extends EventEmitter {
 			handle.browser = await chromium.launch({
 				headless: false,
 				executablePath: EXECUTABLE_PATH,
-				args: [`--fingerprint=${seed}`, `--fingerprint-platform=${os}`, `--timezone=${timezone}`, `--lang=${lang}`],
+				args: launchArgs({ seed, os, timezone, lang }),
 			});
 			if (handle.stopping) throw new StoppedError();
 
@@ -161,7 +182,10 @@ export class RunManager extends EventEmitter {
 				}
 			});
 
-			const page = await handle.browser.newPage();
+			const page = await handle.browser.newPage(VIEWPORT ? { viewport: VIEWPORT } : {});
+			if (BLOCK_RESOURCES.size) {
+				await page.route("**/*", (route) => (BLOCK_RESOURCES.has(route.request().resourceType()) ? route.abort() : route.continue()));
+			}
 			page.setDefaultTimeout(STEP_TIMEOUT_MS);
 			page.setDefaultNavigationTimeout(NAV_TIMEOUT_MS);
 			handle.page = page;
