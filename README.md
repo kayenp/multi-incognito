@@ -20,7 +20,7 @@
 
 ## Optimizations and Lessons Learned:
 <br>
-An orchestrator to run multiple instances of a custom fingerprint-less chromium browser with playwright automation.
+An orchestrator to run multiple instances of a custom fingerprint-less chromium browser with Playwright automation.
 
 ## More Projects
 
