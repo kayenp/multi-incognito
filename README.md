@@ -14,8 +14,9 @@
 
 ```
 1. git clone https://github.com/kayenp/multi-incognito.git
-2. download appropriate version of chromium from https://github.com/adryfish/fingerprint-chromium
-3. .env FLOW=<flow script to run>
+2. download custom chromium from https://github.com/adryfish/fingerprint-chromium
+3. .env CHROMIUM=<chromium location>
+4. .env FLOW=<flow script to run>
 ```
 
 ## Optimizations and Lessons Learned:
